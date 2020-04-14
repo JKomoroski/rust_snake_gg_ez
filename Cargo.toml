@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 ggez = "0.5"
 rand = "0.7"
+config = "0.10.1"
+lazy_static = "1.4.0"
+serde = {version = "1.0.106", features = ["derive"]}

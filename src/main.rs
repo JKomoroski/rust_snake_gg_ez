@@ -15,13 +15,13 @@
 // First we'll import the crates we need for our game;
 // in this case that is just `ggez` and `rand`.
 use ggez;
-
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
-use ggez::event::{KeyCode, KeyMods};
 use ggez::conf::FullscreenType;
+use ggez::event::{KeyCode, KeyMods};
 use ggez::{event, graphics, Context, GameResult};
 
+use std::fmt::Debug;
 use std::time::{Duration, Instant};
 
 mod snake;
@@ -34,27 +34,25 @@ mod direction;
 use direction::Direction;
 
 mod food;
-use food::{Food, Ate};
+use food::{Ate, Food};
 
-// Here we define the size of our game board in terms of how many grid
-// cells it will take up. We choose to make a 30 x 20 game board.
-const GRID_SIZE: (u8, u8) = (30, 30);
-// Now we define the pixel size of each tile, which we make 32x32 pixels.
-const CELL_SIZE: (u8, u8) = (16, 16);
+use config;
+use serde::Deserialize;
 
-// Next we define how large we want our actual window to be by multiplying
-// the components of our grid size by its corresponding pixel size.
-const SCREEN_SIZE: (f32, f32) = (
-    GRID_SIZE.0 as f32 * CELL_SIZE.0 as f32,
-    GRID_SIZE.1 as f32 * CELL_SIZE.1 as f32,
-);
+#[macro_use]
+extern crate lazy_static;
+
+lazy_static! {
+    pub static ref SNAKE_CONFIG: SnakeConfig = try_config();
+    pub static ref SCREEN_SIZE: (f32, f32) = (
+        SNAKE_CONFIG.grid_width as f32 * SNAKE_CONFIG.cell_width as f32,
+        SNAKE_CONFIG.grid_height as f32 * SNAKE_CONFIG.cell_height as f32,
+    );
+}
 
 // Here we're defining how many quickly we want our game to update. This will be
 // important later so that we don't have our snake fly across the screen because
 // it's moving a full tile every frame.
-const UPDATES_PER_SECOND: f32 = 8.0;
-// And we get the milliseconds of delay that this update rate corresponds to.
-const MILLIS_PER_UPDATE: u64 = (1.0 / UPDATES_PER_SECOND * 1000.0) as u64;
 
 /// Now we have the heart of our game, the GameState. This struct
 /// will implement ggez's `EventHandler` trait and will therefore drive
@@ -76,10 +74,10 @@ impl GameState {
     pub fn new() -> Self {
         // First we put our snake a quarter of the way across our grid in the x axis
         // and half way down the y axis. This works well since we start out moving to the right.
-        let snake_pos = (GRID_SIZE.0 / 4, GRID_SIZE.1 / 2).into();
+        let snake_pos = (SNAKE_CONFIG.grid_width / 4, SNAKE_CONFIG.grid_height / 2).into();
         // Then we choose a random place to put our piece of food using the helper we made
         // earlier.
-        let food_pos = GridPosition::random(GRID_SIZE.0, GRID_SIZE.1);
+        let food_pos = GridPosition::random(SNAKE_CONFIG.grid_width, SNAKE_CONFIG.grid_height);
 
         GameState {
             snake: Snake::new(snake_pos),
@@ -98,7 +96,9 @@ impl event::EventHandler for GameState {
     fn update(&mut self, _ctx: &mut Context) -> GameResult {
         // First we check to see if enough time has elapsed since our last update based on
         // the update rate we defined at the top.
-        if Instant::now() - self.last_update >= Duration::from_millis(MILLIS_PER_UPDATE) {
+        if Instant::now() - self.last_update
+            >= Duration::from_millis((1.0 / SNAKE_CONFIG.updates_per_second * 1000.0) as u64)
+        {
             // Then we check to see if the game is over. If not, we'll update. If so, we'll just do nothing.
             if !self.gameover {
                 // Here we do the actual updating of our game world. First we tell the snake to update itself,
@@ -111,7 +111,10 @@ impl event::EventHandler for GameState {
                         // If it ate a piece of food, we randomly select a new position for our piece of food
                         // and move it to this new position.
                         Ate::Food => {
-                            let new_food_pos = GridPosition::random(GRID_SIZE.0, GRID_SIZE.1);
+                            let new_food_pos = GridPosition::random(
+                                SNAKE_CONFIG.grid_width,
+                                SNAKE_CONFIG.grid_height,
+                            );
                             self.food.pos = new_food_pos;
                         }
                         // If it ate itself, we set our gameover state to true.
@@ -133,7 +136,7 @@ impl event::EventHandler for GameState {
     /// draw is where we should actually render the game's current state.
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         // First we clear the screen to a nice (well, maybe pretty glaring ;)) green
-        graphics::clear(ctx, [0.2, 0.13, 0.0, 1.0].into());
+        graphics::clear(ctx, SNAKE_CONFIG.background.into());
         // Then we tell the snake and the food to draw themselves
         self.snake.draw(ctx)?;
         self.food.draw(ctx)?;
@@ -199,4 +202,35 @@ fn main() -> GameResult {
     let state = &mut GameState::new();
     // And finally we actually run our game, passing in our context and state.
     return event::run(ctx, events_loop, state);
+}
+
+fn try_config() -> SnakeConfig {
+    let mut settings = config::Config::default();
+    settings.merge(config::File::with_name("Config")).unwrap();
+    settings
+        .merge(config::Environment::with_prefix("SNAKE"))
+        .unwrap();
+    settings.try_into::<SnakeConfig>().unwrap()
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SnakeConfig {
+    pub grid_width: u8,
+    pub grid_height: u8,
+    pub cell_width: u8,
+    pub cell_height: u8,
+    pub updates_per_second: f32,
+    pub background: [f32; 4],
+    pub snake_head: [f32; 4],
+    pub snake_body: [f32; 4],
+    pub food: [f32; 4],
+}
+
+//TODO: Draw Utils
+fn draw_rect(pos: GridPosition, color: [f32; 4], ctx: &mut Context) -> GameResult {
+    let rectangle =
+        graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), pos.into(), color.into())?;
+
+    graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 },))?;
+    Ok(())
 }

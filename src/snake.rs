@@ -1,9 +1,9 @@
+use crate::{draw_rect, Ate, Direction, Food, GridPosition, SNAKE_CONFIG};
+use ggez::{Context, GameResult};
 use std::collections::LinkedList;
-use crate::{Direction, Ate, GridPosition, Food};
-use ggez::{Context, GameResult, graphics};
 
 /// Now we make a struct that contains all the information needed to describe the
-    /// state of the Snake itself.
+/// state of the Snake itself.
 pub struct Snake {
     /// First we have the head of the snake, which is a single `Segment`.
     pub head: Segment,
@@ -109,25 +109,13 @@ impl Snake {
     /// using SpriteBatch or something similar that batches draw calls.
     pub fn draw(&self, ctx: &mut Context) -> GameResult<()> {
         // We first iterate through the body segments and draw them.
-        for seg in self.body.iter() {
-            // Again we set the color (in this case an orangey color)
-            // and then draw the Rect that we convert that Segment's position into
-            let rectangle = graphics::Mesh::new_rectangle(
-                ctx,
-                graphics::DrawMode::fill(),
-                seg.pos.into(),
-                [0.0, 0.33, 0.15, 1.0].into(),
-            )?;
-            graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 }, ))?;
-        }
+        self.body
+            .iter()
+            .map(|seg| seg.pos)
+            .try_for_each(|pos| draw_rect(pos, SNAKE_CONFIG.snake_body, ctx))?;
+
         // And then we do the same for the head, instead making it fully red to distinguish it.
-        let rectangle = graphics::Mesh::new_rectangle(
-            ctx,
-            graphics::DrawMode::fill(),
-            self.head.pos.into(),
-            [1.0, 0.5, 0.0, 1.0].into(),
-        )?;
-        graphics::draw(ctx, &rectangle, (ggez::mint::Point2 { x: 0.0, y: 0.0 }, ))?;
+        draw_rect(self.head.pos, SNAKE_CONFIG.snake_head, ctx)?;
         Ok(())
     }
 }
@@ -145,4 +133,3 @@ impl Segment {
         Segment { pos }
     }
 }
-

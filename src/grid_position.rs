@@ -1,9 +1,8 @@
+use crate::Direction;
+use crate::SNAKE_CONFIG;
+use ggez::graphics;
 use rand;
 use rand::Rng;
-use ggez::graphics;
-use crate::Direction;
-use crate::GRID_SIZE;
-use crate::CELL_SIZE;
 use std::u8;
 
 /// Now we define a struct that will hold an entity's position on our game board
@@ -43,10 +42,18 @@ impl GridPosition {
     /// moved us off the board to the top, bottom, left, or right.
     pub fn new_from_move(pos: GridPosition, dir: Direction) -> Self {
         match dir {
-            Direction::Up => GridPosition::new(pos.x, (pos.y.checked_sub(1).unwrap_or(GRID_SIZE.1 - 1)) % GRID_SIZE.1),
-            Direction::Down => GridPosition::new(pos.x, (pos.y + 1) % GRID_SIZE.1),
-            Direction::Left => GridPosition::new(pos.x.checked_sub(1).unwrap_or(GRID_SIZE.0 - 1) % GRID_SIZE.0, pos.y),
-            Direction::Right => GridPosition::new((pos.x + 1) % GRID_SIZE.0, pos.y),
+            Direction::Up => GridPosition::new(
+                pos.x,
+                (pos.y.checked_sub(1).unwrap_or(SNAKE_CONFIG.grid_width - 1))
+                    % SNAKE_CONFIG.grid_width,
+            ),
+            Direction::Down => GridPosition::new(pos.x, (pos.y + 1) % SNAKE_CONFIG.grid_height),
+            Direction::Left => GridPosition::new(
+                pos.x.checked_sub(1).unwrap_or(SNAKE_CONFIG.grid_height - 1)
+                    % SNAKE_CONFIG.grid_height,
+                pos.y,
+            ),
+            Direction::Right => GridPosition::new((pos.x + 1) % SNAKE_CONFIG.grid_width, pos.y),
         }
     }
 }
@@ -58,10 +65,10 @@ impl GridPosition {
 impl From<GridPosition> for graphics::Rect {
     fn from(pos: GridPosition) -> Self {
         graphics::Rect::new_i32(
-            pos.x as i32 * CELL_SIZE.0 as i32,
-            pos.y as i32 * CELL_SIZE.1 as i32,
-            CELL_SIZE.0 as i32,
-            CELL_SIZE.1 as i32,
+            pos.x as i32 * SNAKE_CONFIG.cell_width as i32,
+            pos.y as i32 * SNAKE_CONFIG.cell_height as i32,
+            SNAKE_CONFIG.cell_width as i32,
+            SNAKE_CONFIG.cell_height as i32,
         )
     }
 }
@@ -88,8 +95,8 @@ trait ModuloSigned {
 /// that we need in order to implement a modulus function that works for negative numbers
 /// as well.
 impl<T> ModuloSigned for T
-    where
-        T: std::ops::Add<Output = T> + std::ops::Rem<Output = T> + Clone,
+where
+    T: std::ops::Add<Output = T> + std::ops::Rem<Output = T> + Clone,
 {
     fn modulo(&self, n: T) -> T {
         // Because of our trait bounds, we can now apply these operators.
