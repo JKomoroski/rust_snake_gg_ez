@@ -1,8 +1,7 @@
-// Next we need to actually `use` the pieces of ggez that we are going
-// to need frequently.
+use crate::components::draw::draw_rect;
+use crate::components::grid_position::GridPosition;
+use crate::SNAKE_CONFIG;
 use ggez::{Context, GameResult};
-
-use crate::{draw_rect, GridPosition, SNAKE_CONFIG};
 
 /// This is again an abstraction over a `GridPosition` that represents
 /// a piece of food the snake can eat. It can draw itself.

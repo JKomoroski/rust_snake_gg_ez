@@ -1,6 +1,7 @@
-use crate::Direction;
+use crate::components::direction::Direction;
 use crate::SNAKE_CONFIG;
 use ggez::graphics;
+use ggez::graphics::mint;
 use rand;
 use rand::Rng;
 use std::u8;
@@ -70,6 +71,15 @@ impl From<GridPosition> for graphics::Rect {
             SNAKE_CONFIG.cell_width as i32,
             SNAKE_CONFIG.cell_height as i32,
         )
+    }
+}
+
+impl From<GridPosition> for mint::Point2<f32> {
+    fn from(pos: GridPosition) -> mint::Point2<f32> {
+        mint::Point2 {
+            x: pos.x as f32,
+            y: pos.y as f32,
+        }
     }
 }
 

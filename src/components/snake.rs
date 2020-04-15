@@ -1,4 +1,8 @@
-use crate::{draw_rect, Ate, Direction, Food, GridPosition, SNAKE_CONFIG};
+use crate::components::direction::*;
+use crate::components::draw::draw_rect;
+use crate::components::food::*;
+use crate::components::grid_position::GridPosition;
+use crate::SNAKE_CONFIG;
 use ggez::{Context, GameResult};
 use std::collections::LinkedList;
 
