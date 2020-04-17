@@ -77,8 +77,8 @@ impl From<GridPosition> for graphics::Rect {
 impl From<GridPosition> for mint::Point2<f32> {
     fn from(pos: GridPosition) -> mint::Point2<f32> {
         mint::Point2 {
-            x: pos.x as f32,
-            y: pos.y as f32,
+            x: pos.x as f32 * SNAKE_CONFIG.cell_width as f32,
+            y: pos.y as f32 * SNAKE_CONFIG.cell_height as f32,
         }
     }
 }

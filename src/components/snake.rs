@@ -28,7 +28,7 @@ pub struct Snake {
     /// Store the direction that will be used in the `update` after the next `update`
     /// This is needed so a user can press two directions (eg. left then up)
     /// before one `update` has happened. It sort of queues up key press input
-    pub next_dir: Option<Direction>,
+    pub buffered_dir: Option<Direction>,
 }
 
 impl Snake {
@@ -43,7 +43,7 @@ impl Snake {
             last_update_dir: Direction::Right,
             body: body,
             ate: None,
-            next_dir: None,
+            buffered_dir: None,
         }
     }
 
@@ -69,9 +69,10 @@ impl Snake {
     pub fn update(&mut self, food: &Food) {
         // If `last_update_dir` has already been updated to be the same as `dir`
         // and we have a `next_dir`, then set `dir` to `next_dir` and unset `next_dir`
-        if self.last_update_dir == self.dir && self.next_dir.is_some() {
-            self.dir = self.next_dir.unwrap();
-            self.next_dir = None;
+
+        if self.last_update_dir == self.dir && self.buffered_dir.is_some() {
+            self.dir = self.buffered_dir.unwrap();
+            self.buffered_dir = None;
         }
         // First we get a new head position by using our `new_from_move` helper
         // function from earlier. We move our head in the direction we are currently

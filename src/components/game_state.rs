@@ -41,6 +41,17 @@ impl GameState {
             last_update: Instant::now(),
         }
     }
+
+    fn restart(&mut self) {
+        let snake_pos = (SNAKE_CONFIG.grid_width / 4, SNAKE_CONFIG.grid_height / 2).into();
+        self.snake = Snake::new(snake_pos);
+        self.food = Food::new(GridPosition::random(
+            SNAKE_CONFIG.grid_width,
+            SNAKE_CONFIG.grid_height,
+        ));
+        self.gameover = false;
+        self.last_update = Instant::now();
+    }
 }
 
 /// Now we implement EventHandler for GameState. This provides an interface
@@ -75,9 +86,7 @@ impl event::EventHandler for GameState {
                         // If it ate itself, we set our gameover state to true.
                         Ate::Itself => {
                             self.gameover = true;
-                            let t =
-                                format!("Game Over. Snake Length Score {}", self.snake.body.len());
-                            draw_text(GridPosition::from((0u8, 0u8)), t, _ctx)?;
+                            //draw_text(GridPosition::from((15u8, 15u8)), t, _ctx)?;
                             //let _ = event::quit(_ctx);
                             return Ok(());
                         }
@@ -98,6 +107,23 @@ impl event::EventHandler for GameState {
         // Then we tell the snake and the food to draw themselves
         self.snake.draw(ctx)?;
         self.food.draw(ctx)?;
+
+        if self.gameover {
+            let game_over_text = format!("Snake Length Score {}.", self.snake.body.len());
+            draw_text(GridPosition::from((11u8, 1u8)), game_over_text, ctx)?;
+
+            draw_text(
+                GridPosition::from((10u8, 2u8)),
+                String::from("Press Enter to Play Again."),
+                ctx,
+            )?;
+
+            draw_text(
+                GridPosition::from((11u8, 3u8)),
+                String::from("Press Escape to Exit."),
+                ctx,
+            )?;
+        }
         // Finally we call graphics::present to cycle the gpu's framebuffer and display
         // the new frame we just drew.
         graphics::present(ctx)?;
@@ -121,12 +147,20 @@ impl event::EventHandler for GameState {
             // If it succeeds, we check if a new direction has already been set
             // and make sure the new direction is different then `snake.dir`
             if self.snake.dir != self.snake.last_update_dir && dir.inverse() != self.snake.dir {
-                self.snake.next_dir = Some(dir);
+                self.snake.buffered_dir = Some(dir);
             } else if dir.inverse() != self.snake.last_update_dir {
                 // If no new direction has been set and the direction is not the inverse
                 // of the `last_update_dir`, then set the snake's new direction to be the
                 // direction the user pressed.
                 self.snake.dir = dir;
+            }
+        }
+
+        if self.gameover {
+            match keycode {
+                KeyCode::Return => self.restart(),
+                KeyCode::Escape => event::quit(_ctx),
+                _ => {}
             }
         }
     }

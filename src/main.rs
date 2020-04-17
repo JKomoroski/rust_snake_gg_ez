@@ -65,11 +65,15 @@ fn main() -> GameResult {
 
 fn try_config() -> SnakeConfig {
     let mut settings = config::Config::default();
-    settings.merge(config::File::with_name("Config")).unwrap();
+    settings
+        .merge(config::File::with_name("Config"))
+        .expect("Error with Config.toml");
     settings
         .merge(config::Environment::with_prefix("SNAKE"))
-        .unwrap();
-    settings.try_into::<SnakeConfig>().unwrap()
+        .expect("Error with SNAKE prefix Environment Vars");
+    settings
+        .try_into::<SnakeConfig>()
+        .expect("Error Related to Mapping config to Snake Struct")
 }
 
 #[derive(Deserialize, Debug)]
